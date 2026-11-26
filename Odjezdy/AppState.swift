@@ -73,7 +73,10 @@ final class AppState: ObservableObject {
 
     let location = LocationService()
     private var indexes: [Region: StopIndex] = [:]   // each loaded on first use, not at launch
-    private lazy var providers: [Region: DepartureProvider] = [.prague: GolemioClient()]
+    private lazy var providers: [Region: DepartureProvider] = [.prague: PragueProvider(), .czechia: MotisClient()]
+    private let czBorder = CountryBorder(resource: "cz_border")
+    /// Where the shown departures came from ("Golemio" / "MOTIS"), for the footer.
+    @Published private(set) var dataSource = ""
     @Published private(set) var region: Region?
 
     private var refreshTask: Task<Void, Never>?
@@ -95,8 +98,29 @@ final class AppState: ObservableObject {
     /// A stop picked from search; shown instead of the nearby tabs until closed.
     @Published private(set) var searchedGroup: StopGroup?
 
-    private var recentsKey: String { "recentStops_\(region?.rawValue ?? "")" }
-    private var recentIDs: [String] { UserDefaults.standard.stringArray(forKey: recentsKey) ?? [] }
+    private var recentsKey: String { "recentStopGroups_\(region?.rawValue ?? "")" }
+
+    /// Recent picks, stored whole (MOTIS stops can't be looked up offline).
+    private var recents: [StopGroup] {
+        guard let raw = UserDefaults.standard.array(forKey: recentsKey) as? [[String: Any]] else { return [] }
+        return raw.compactMap { d in
+            guard let name = d["name"] as? String, let town = d["town"] as? String,
+                  let lat = d["lat"] as? Double, let lon = d["lon"] as? Double,
+                  let tpcs = d["tpcs"] as? [String] else { return nil }
+            let dist = lastCoordinate.map { StopIndex.distance($0.latitude, $0.longitude, lat, lon) } ?? 0
+            return StopGroup(name: name, town: town, distance: dist, lat: lat, lon: lon, tpcs: tpcs,
+                             modes: Modes(rawValue: d["modes"] as? Int ?? 0), weekdayDepartures: 0,
+                             lines: [], score: 0)
+        }
+    }
+
+    private func remember(_ g: StopGroup) {
+        var list = (UserDefaults.standard.array(forKey: recentsKey) as? [[String: Any]] ?? [])
+            .filter { ($0["town"] as? String ?? "") + "|" + ($0["name"] as? String ?? "") != g.id }
+        list.insert(["name": g.name, "town": g.town, "lat": g.lat, "lon": g.lon,
+                     "tpcs": g.tpcs, "modes": g.modes.rawValue], at: 0)
+        UserDefaults.standard.set(Array(list.prefix(5)), forKey: recentsKey)
+    }
 
     func openSearch() {
         searchText = ""
@@ -106,17 +130,25 @@ final class AppState: ObservableObject {
 
     func closeSearch() { searchOpen = false }
 
+    private var searchTask: Task<Void, Never>?
+
     private func updateSearch() {
+        searchTask?.cancel()
         guard let r = region else { searchResults = []; return }
-        let idx = index(r)
-        if searchText.trimmingCharacters(in: .whitespaces).count < 2 {
-            // Recent picks (resolved by name; ids are "town|name").
-            searchResults = recentIDs.compactMap { id in
-                let name = String(id.split(separator: "|", maxSplits: 1).last ?? "")
-                return idx.search(name, from: lastCoordinate, limit: 20).first { $0.id == id }
-            }
+        let text = searchText.trimmingCharacters(in: .whitespaces)
+        if text.count < 2 {
+            searchResults = recents
+        } else if r == .prague {
+            searchResults = index(r).search(text, from: lastCoordinate)
         } else {
-            searchResults = idx.search(searchText, from: lastCoordinate)
+            // MOTIS geocoder: wait for a pause in typing, then ask once.
+            let loc = lastCoordinate
+            searchTask = Task {
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                if Task.isCancelled { return }
+                let results = (try? await MotisClient.search(text, from: loc)) ?? []
+                if !Task.isCancelled { self.searchResults = results }
+            }
         }
     }
 
@@ -125,9 +157,7 @@ final class AppState: ObservableObject {
         selectedID = g.id
         expandedModes = []
         searchOpen = false
-        var recents = recentIDs.filter { $0 != g.id }
-        recents.insert(g.id, at: 0)
-        UserDefaults.standard.set(Array(recents.prefix(5)), forKey: recentsKey)
+        remember(g)
         reload()
     }
 
@@ -237,9 +267,8 @@ final class AppState: ObservableObject {
     /// Inside the PID network if a PID stop is within 1 km. The stop list is only loaded
     /// when you're inside the network's rough box.
     private func region(for c: CLLocationCoordinate2D) -> Region? {
-        for r in Region.allCases where r.roughlyContains(c) {
-            if index(r).hasStop(near: c, within: 1000) { return r }
-        }
+        if Region.prague.roughlyContains(c) && index(.prague).hasStop(near: c, within: 1000) { return .prague }
+        if Region.czechia.roughlyContains(c) && czBorder.contains(c) { return .czechia }
         return nil
     }
 
@@ -310,7 +339,13 @@ final class AppState: ObservableObject {
             StopIndex.distance($0.latitude, $0.longitude, loc.coordinate.latitude, loc.coordinate.longitude) > 75
         }) ?? true {
             lastCoordinate = loc.coordinate
-            let found = index(r).bestStops(near: loc.coordinate, limit: 3, preferred: preference(for: loc.coordinate))
+            let found: [StopGroup]
+            if r == .czechia {
+                found = (try? await MotisClient.nearbyStops(loc.coordinate, preferred: preference(for: loc.coordinate))) ?? []
+                if Task.isCancelled { return }
+            } else {
+                found = index(r).bestStops(near: loc.coordinate, limit: 3, preferred: preference(for: loc.coordinate))
+            }
             if found.map(\.id) != groups.map(\.id) {
                 groups = found
                 selectedID = found.first?.id
@@ -341,6 +376,7 @@ final class AppState: ObservableObject {
         guard !current.isEmpty, let r = region, let provider = providers[r] else { return }
         var results: [String: [Departure]] = [:]
         var notices: [String: [String]] = [:]
+        var sources: [String: String] = [:]
         var missingKey = false
         await withTaskGroup(of: (String, Result<StopBoard, Error>).self) { tg in
             for g in current {
@@ -355,6 +391,7 @@ final class AppState: ObservableObject {
                     var seen = Set<String>()
                     results[id] = board.departures.filter { seen.insert("\($0.line)|\($0.destination)|\($0.planned)").inserted }
                     notices[id] = board.notices
+                    sources[id] = board.source
                 case .failure(let e):
                     if case DepartureError.missingKey = e { missingKey = true }
                     ovLog("fetch failed for \(id): \(e.localizedDescription)")
@@ -375,6 +412,7 @@ final class AppState: ObservableObject {
         noticesByGroup.merge(notices) { _, new in new }
         live = .ok
         lastUpdated = Date()
+        dataSource = selected.flatMap { sources[$0.id] } ?? sources.values.first ?? ""
     }
 
     /// Inline key editor in the popover (no @State: keeps the CLT build working).

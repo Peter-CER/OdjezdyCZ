@@ -117,9 +117,14 @@ struct StopGroup: Identifiable, Hashable {
         lines.first { $0.number == line }?.mode ?? .bus
     }
 
-    func badgeColors(forLine line: String, mode: Modes) -> (bg: Color, fg: Color) {
-        let hex = lines.first(where: { $0.number == line && $0.mode == mode })?.colorHex
-            ?? lines.first(where: { $0.number == line })?.colorHex ?? ""
+    func badgeColors(for d: Departure) -> (bg: Color, fg: Color) {
+        badgeColors(forLine: d.line, mode: d.mode, fallbackHex: d.colorHex)
+    }
+
+    func badgeColors(forLine line: String, mode: Modes, fallbackHex: String? = nil) -> (bg: Color, fg: Color) {
+        let known = lines.first(where: { $0.number == line && $0.mode == mode })?.colorHex
+            ?? lines.first(where: { $0.number == line })?.colorHex
+        let hex = (known?.isEmpty == false ? known : fallbackHex) ?? ""
         guard let bg = Color(hex: hex), let lum = Color.luminance(hex: hex) else {
             return (mode.fallbackColor, .white)
         }
@@ -139,6 +144,10 @@ struct Departure: Identifiable, Hashable {
     let expected: Date
     let status: Status
     let isLive: Bool
+    /// Times known to the second (Golemio). MOTIS is per minute → no m:ss countdown.
+    var precise = true
+    /// Line colour sent with the departure (MOTIS), used when the stop has no colour for the line.
+    var colorHex: String?
 
     var delayMinutes: Int { Int((expected.timeIntervalSince(planned) / 60).rounded()) }
     var isCancelled: Bool { status == .cancelled }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// A source of live departures for one stop group (all its quays/platforms).
-/// Golemio (Prague's official open-data API) is the only one; another network would add one.
+/// Golemio (Prague, with key), MOTIS (all of Czechia, no key), PragueProvider (picks between them).
 protocol DepartureProvider {
     func board(for group: StopGroup) async throws -> StopBoard
 }
@@ -10,6 +10,7 @@ protocol DepartureProvider {
 struct StopBoard {
     var departures: [Departure]
     var notices: [String] = []
+    var source = "Golemio"
 }
 
 enum DepartureError: LocalizedError {

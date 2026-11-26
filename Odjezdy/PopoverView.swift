@@ -41,8 +41,8 @@ struct PopoverView: View {
                         detail: "Check that Wi-Fi is on, then try again.",
                         button: ("Try Again", { state.reload() }))
             case .outsideArea:
-                message(icon: "globe.europe.africa", title: "You're not in the PID area",
-                        detail: "Odjezdy shows departures for Prague and Central Bohemia (PID).")
+                message(icon: "globe.europe.africa", title: "You're not in Czechia",
+                        detail: "Odjezdy shows departures for stops in Czechia.")
             case .needsKey:
                 message(icon: "key", title: "Prague needs a free API key",
                         detail: "Live PID departures come from Golemio, Prague's open data API. Sign up, copy your key, and paste it here.",
@@ -202,7 +202,11 @@ struct PopoverView: View {
                         Label("Live data unavailable", systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
                     } else {
-                        Text("Updated \(t.formatted(date: .omitted, time: .shortened))")
+                        Text("Updated \(t.formatted(date: .omitted, time: .shortened))"
+                             + (state.dataSource.isEmpty ? "" : " · \(state.dataSource)"))
+                            .help(state.dataSource == "MOTIS"
+                                  ? "Data from motis.obehy.cz (to the minute). In Prague, add a free Golemio key for second-accurate times, live buses and notices."
+                                  : "Data from Golemio, Prague's open-data API")
                     }
                 } else {
                     Text(" ")
@@ -227,7 +231,7 @@ struct PopoverView: View {
                     }
                 }
                 Divider()
-                Button("Golemio API Key…") { state.beginKeyEntry() }
+                Button("Golemio API Key (Prague, optional)…") { state.beginKeyEntry() }
                 Divider()
                 Button("Quit Odjezdy") { NSApp.terminate(nil) }
             } label: {
@@ -283,7 +287,8 @@ struct PopoverView: View {
     private var keyEntry: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Golemio API key (Prague)").font(.system(size: 13, weight: .semibold))
-            Text("Free at api.golemio.cz. Stored only on this Mac.")
+            Text("Optional. Without it Prague uses MOTIS too; with it you get second-accurate times, live buses and stop notices. Free at api.golemio.cz, stored only on this Mac.")
+                .fixedSize(horizontal: false, vertical: true)
                 .font(.system(size: 11)).foregroundStyle(.secondary)
             TextField("Paste key", text: $state.keyDraft)
                 .textFieldStyle(.roundedBorder)

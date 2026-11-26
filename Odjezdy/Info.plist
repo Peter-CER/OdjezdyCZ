@@ -14,8 +14,8 @@
 	<key>LSMinimumSystemVersion</key><string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSApplicationCategoryType</key><string>public.app-category.travel</string>
 	<key>LSUIElement</key><true/>
-	<key>NSLocationUsageDescription</key><string>Odjezdy uses your location to find the nearest public transport stop. It only checks when you click the icon, plus a low-power check to hide itself outside the Prague (PID) area.</string>
+	<key>NSLocationUsageDescription</key><string>Odjezdy uses your location to find the nearest public transport stop. It only checks when you click the icon, plus a low-power check to hide itself outside Czechia.</string>
 	<key>NSLocationWhenInUseUsageDescription</key><string>Odjezdy uses your location to find the nearest public transport stop.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key><string>Odjezdy uses your location to find the nearest public transport stop, and a low-power check to hide itself outside the Prague (PID) area.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key><string>Odjezdy uses your location to find the nearest public transport stop, and a low-power check to hide itself outside Czechia.</string>
 </dict>
 </plist>

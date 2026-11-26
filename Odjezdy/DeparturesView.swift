@@ -27,7 +27,7 @@ struct DeparturesView: View {
                                       expanded: section.expanded) { onToggle(section.id) }
                             .padding(.top, si == 0 ? 2 : 8)
                         ForEach(Array(section.departures.enumerated()), id: \.element.id) { i, d in
-                            DepartureRow(departure: d, colors: group.badgeColors(forLine: d.line, mode: d.mode),
+                            DepartureRow(departure: d, colors: group.badgeColors(for: d),
                                          now: ctx.date, ledStyle: ledStyle, alertSet: isAlertSet(d))
                                 // Leaves before you can walk there: dimmed.
                                 .opacity(group.isCatchable(d, now: ctx.date) || d.isCancelled ? 1 : 0.4)
@@ -190,7 +190,7 @@ struct DepartureRow: View {
             let mins = secs / 60
             // Live predictions carry real seconds: count down m:ss in the last 4 minutes.
             // Planned times stay in whole minutes so they don't pretend to be precise.
-            let showSeconds = departure.isLive && secs < 240
+            let showSeconds = departure.isLive && departure.precise && secs < 240
             let isNow = showSeconds ? secs <= 0 : mins < 1
             HStack(spacing: 5) {
                 if alertSet {

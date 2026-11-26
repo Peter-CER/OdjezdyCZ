@@ -5,9 +5,9 @@
 <h1 align="center">Odjezdy</h1>
 
 <p align="center">
-  <b>Live Prague public transport departures in your Mac's menu bar.</b><br>
+  <b>Live public transport departures in your Mac's menu bar, for Prague and all of Czechia.</b><br>
   Click the tram icon and see what leaves next from the stop you're standing at: metro, tram, bus, train and ferry,<br>
-  styled like the departure boards at PID stops.
+  styled like the departure boards at the stops.
 </p>
 
 <p align="center">
@@ -15,7 +15,13 @@
   <img src="docs/screenshot-light.png" width="380" alt="Odjezdy in light mode">
 </p>
 
-*Odjezdy* is Czech for "departures". The app covers the whole **PID** network (Pražská integrovaná doprava): Prague and Central Bohemia. It is free and open source (GPL-3.0), runs entirely on your Mac, and talks to nothing except Prague's official open-data API.
+*Odjezdy* is Czech for "departures". It covers **Prague and Central Bohemia (PID)** in full detail, and **the rest of Czechia** (Brno, Ostrava, Olomouc, Plzeň, Liberec, trains everywhere, …) through a community MOTIS server. No API key is needed to start. It is free and open source (GPL-3.0), and has no accounts or tracking.
+
+| Where | Data source | Live data | Key |
+|---|---|---|---|
+| Prague + Central Bohemia (PID) | [Golemio](https://api.golemio.cz), Prague's official open-data API | metro, tram, bus, train; predictions to the second; stop notices | free key, optional |
+| Prague without a key | [MOTIS @ motis.obehy.cz](https://motis.obehy.cz) | metro, trams, most lines (to the minute) | none |
+| Rest of Czechia | [MOTIS @ motis.obehy.cz](https://motis.obehy.cz) | all trains; buses and trams in all regions except Karlovarský, Plzeňský and Vysočina (timetable there) | none |
 
 ---
 
@@ -41,9 +47,9 @@
 - **Live departures for the stop you're at.** One click finds where you are and shows the next departures. Live predictions have a green dot; departures without live data show their timetable time.
 - **Grouped by transport type.** Metro, train, tram, bus and ferry each get their own section with the official PID line colours (A green, B yellow, C red, maroon trams, …), so you're not reading a mix of numbers.
 - **"More" on every section.** Big stops like Dejvická or Anděl have dozens of departures; click **More ▾** on a section to see up to 12 later ones.
-- **Second-accurate countdowns.** In the last 4 minutes, live departures count down as `3:25 … 0:40 … now`. Further out they show `7 min`, and anything over an hour shows the clock time.
+- **Second-accurate countdowns.** In the last 4 minutes, live departures count down as `3:25 … 0:40 … now` (with Golemio data, which predicts to the second; MOTIS data shows minutes). Further out they show `7 min`, and anything over an hour shows the clock time.
 - **Delays and cancellations.** A delayed departure shows the scheduled time crossed out next to the predicted one; cancelled trips are struck through in red.
-- **Disruption notices.** Official PID service notices for the stop (closures, moved stops, diversions) appear as an orange banner above the board, in English when PID provides a translation.
+- **Disruption notices.** Service notices for the stop (closures, moved stops, diversions) appear as an orange banner above the board: official PID notices via Golemio (in English when translated), and MOTIS alerts elsewhere.
 - **Sign-style amber text** (optional): a nod to the LED boards at the stops (⚙︎ → *Sign-style Amber Text*).
 
 ### Smart stop picking
@@ -69,7 +75,7 @@
 ### Find any stop 🔍
 <img src="docs/search.png" width="340" align="right" alt="Stop search">
 
-- Click 🔍 to **search any PID stop** and see its departures without being there.
+- Click 🔍 to **search any stop in the region you're in** and see its departures without being there. In Prague the search works offline; elsewhere it uses MOTIS's search, ranked towards where you are.
 - Accents and capitals don't matter (`hlavni` finds *Hlavní nádraží*), and busy stops rank first.
 - **Recent searches** are one click away.
 - *Back to nearby* returns to the stops around you.
@@ -79,7 +85,7 @@
 ### A good menu bar citizen
 - **Lives only in the menu bar**: no Dock icon, no windows.
 - **Starts at login** automatically (toggle in ⚙︎).
-- **Hides itself outside the PID area.** Open it from Spotlight to bring it back if you need it.
+- **Hides itself outside Czechia.** Open it from Spotlight to bring it back if you need it.
 - **Follows macOS Light/Dark/Auto appearance** and your accent colour.
 - **Universal app** for Apple silicon and Intel Macs.
 
@@ -87,7 +93,7 @@
 
 ## Install
 
-**Requirements:** macOS 14 Sonoma or newer, and a free Golemio API key ([see below](#first-start-the-golemio-api-key)).
+**Requirements:** macOS 14 Sonoma or newer. A free Golemio API key is optional but recommended in Prague ([see below](#first-start-the-golemio-api-key)).
 
 1. Download **`Odjezdy.zip`** from the [latest release](../../releases/latest).
 2. Unzip it and drag **Odjezdy** into your **Applications** folder.
@@ -95,7 +101,7 @@
    - Click **Done**, then go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to *"Odjezdy" was blocked*. Confirm.
    - You only need to do this once.
 4. Allow **Location** when asked. Odjezdy uses it only to find nearby stops; see [Privacy](#privacy-and-battery).
-5. A tram icon appears in your menu bar. Click it, and continue with the API key.
+5. A tram icon appears in your menu bar. Click it, and that's it. In Prague, adding a Golemio key (below) gives you even better data.
 
 > Prefer to build it yourself? See [Build from source](#build-from-source).
 
@@ -103,13 +109,13 @@
 
 ## First start: the Golemio API key
 
-Live PID data comes from **[Golemio](https://api.golemio.cz)**, the City of Prague's official open-data platform. It's free, but each user needs their own key:
+*Optional.* Without a key, Prague departures come from MOTIS, like the rest of Czechia. With a key, Prague uses **[Golemio](https://api.golemio.cz)**, the City of Prague's official open-data platform. You get predictions to the second (so the `3:25` countdown is exact), live data for buses, and official stop notices. It's free, but each user needs their own key:
 
 1. Sign up at **[api.golemio.cz/api-keys](https://api.golemio.cz/api-keys/auth/sign-up)** and confirm your email.
 2. Generate an API key and copy it (it's a long string).
-3. Click the Odjezdy icon. It shows *"Prague needs a free API key"*. Click **Enter API Key…**, paste the key and press **Save**.
+3. Click the Odjezdy icon → ⚙︎ → **Golemio API Key (Prague, optional)…**, paste the key and press **Save**.
 
-The key is stored only on your Mac (in the app's preferences) and is sent only to `api.golemio.cz`. You can change it any time via ⚙︎ → **Golemio API Key…**.
+The key is stored only on your Mac (in the app's preferences) and is sent only to `api.golemio.cz`. The footer shows which source you're seeing (*Updated 18:28 · Golemio* or *· MOTIS*).
 
 ---
 
@@ -130,29 +136,34 @@ The key is stored only on your Mac (in the app's preferences) and is sent only t
 
 ## Privacy and battery
 
-- **No accounts, no analytics, no servers of our own.** The app talks only to `api.golemio.cz`, and only while the popover is open (or while a leave-now alert is pending).
-- **Location stays on your Mac.** It's used for two things:
+- **No accounts, no analytics, no servers of our own.** The app talks only to `api.golemio.cz` and `motis.obehy.cz`, and only while the popover is open (or while a leave-now alert is pending).
+- **Location is used for two things:**
   - a single location fix when you click the icon, to pick nearby stops;
-  - macOS's low-power *significant location change* service (Wi-Fi based, wakes only on moves of roughly 500 m+), used solely to hide the icon outside the PID area.
-- Your location is **never sent anywhere.** Stops are found offline from the stop list built into the app, and Golemio is only asked for departures of specific stop IDs.
-- **Lightweight:** about 35 MB of memory, ~0% CPU when idle, and no network use while the popover is closed. A refresh is about 8 KB per stop (compressed).
+  - macOS's low-power *significant location change* service (Wi-Fi based, wakes only on moves of roughly 500 m+), used to hide the icon outside Czechia. The country check is offline, using a border built into the app.
+- **What is sent where:**
+  - **In Prague:** your location never leaves your Mac. Stops are found offline from the stop list built into the app; Golemio/MOTIS are only asked for departures of specific stops.
+  - **Elsewhere in Czechia:** to find nearby stops, the app asks MOTIS for stops in a ~1.3 km box around you, so the MOTIS server sees that approximate area, like any map app would. Search text is sent to MOTIS when you search there.
+- **Lightweight:** about 35 MB of memory, ~0% CPU when idle, and no network use while the popover is closed. A Golemio refresh is about 8 KB per stop (compressed). MOTIS is polled every 30 s, to be gentle with a volunteer-run server.
 
 ---
 
 ## How it works
 
 ```
- click ──► one location fix ──► stop list built into the app (8,000+ PID stops, offline)
+ click ──► one location fix ──► Prague: stop list built into the app (8,000+ PID stops, offline)
+                                 elsewhere: MOTIS stops near you
                                      │  rank by busyness, distance to nearest platform, mode
                                      ▼
-                       3 nearby stops ──► Golemio departure boards (HTTPS, parallel)
+                       3 nearby stops ──► Golemio (Prague, key) or MOTIS (no key / rest of CZ)
                                      │
                                      ▼
             sections per mode · catchable filter · countdowns · notices · alerts
 ```
 
 - **Stop list** (`Odjezdy/Resources/stops_prague.json`, ~1.4 MB): every PID stop with its platforms, Golemio stop IDs, line colours and a busyness score, generated from the official PID GTFS feed by [`tools/build_stops.py`](tools/build_stops.py).
-- **Live data**: `GET https://api.golemio.cz/v2/pid/departureboards` with the selected stops' GTFS IDs. It returns predicted times (to the second), delays, cancellations and service notices.
+- **Live data, Prague**: `GET https://api.golemio.cz/v2/pid/departureboards` with the selected stops' GTFS IDs. It returns predicted times (to the second), delays, cancellations and service notices.
+- **Live data, everywhere else** (and Prague without a key): the [MOTIS API](https://redocly.github.io/redoc?url=https://raw.githubusercontent.com/motis-project/motis/refs/tags/v2.11.4/openapi.yaml) at `motis.obehy.cz`: `/api/v1/map/stops` for nearby stops, `/api/v1/stoptimes` for departures and alerts, `/api/v1/geocode` for search. The app identifies itself in the User-Agent (`Odjezdy/<version> (+repo URL)`), as the server operator asks.
+- **Country check**: `Odjezdy/Resources/cz_border.json`, from Natural Earth via [`tools/build_border.py`](tools/build_border.py).
 - **Code layout:**
 
 | File | What it does |
@@ -161,10 +172,12 @@ The key is stored only on your Mac (in the app's preferences) and is sent only t
 | `AppState.swift` | Location → stops → fetch loop, sections, tabs, search, favourites |
 | `StopIndex.swift` | Loads the stop list, nearby ranking, search |
 | `GolemioClient.swift` | Golemio API client and parsing |
+| `MotisClient.swift` | MOTIS client (stops, departures, alerts, search) and the Prague provider that picks Golemio or MOTIS |
+| `CountryBorder.swift` | Offline "inside Czechia?" check |
 | `LocationService.swift` | One-shot location and significant-change monitoring |
 | `LeaveAlert.swift` | Leave-now notifications that follow live delays |
 | `PopoverView.swift` / `DeparturesView.swift` | The UI |
-| `Region.swift` | The PID area (kept as an enum, so other networks can be added in a fork) |
+| `Region.swift` | Prague (PID) and Czechia |
 
 ---
 
@@ -230,10 +243,13 @@ Then rebuild the app. The script needs only Python 3, and takes about a minute.
 ## FAQ and troubleshooting
 
 **The icon disappeared.**
-You're probably outside the PID area, so it hides itself. Open **Odjezdy** from Spotlight or Applications, and the icon comes back for the rest of the session.
+You're probably outside Czechia, so it hides itself. Open **Odjezdy** from Spotlight or Applications, and the icon comes back for the rest of the session.
 
-**"Prague needs a free API key" even though I entered one.**
-The key was rejected. Check that you copied the whole key, and that it's active in your Golemio account.
+**The footer says "MOTIS" in Prague even though I entered a Golemio key.**
+The key was rejected (or Golemio was briefly down), so the app fell back to MOTIS. Check that you copied the whole key, and that it's active in your Golemio account.
+
+**No live data (no green dots) in Plzeň, Karlovy Vary or Vysočina.**
+MOTIS has only timetable data for those regions, so departures show their scheduled times.
 
 **I don't get leave-now notifications.**
 1. Check **System Settings → Notifications → Odjezdy**: notifications on, style *Banners* or *Alerts*.
@@ -246,18 +262,20 @@ macOS gets your location from nearby Wi-Fi, which is usually accurate to tens of
 **Why isn't it on the Mac App Store, or notarized?**
 Both require a paid Apple Developer account (€99/year). This is a free hobby project.
 
-**Can it support another city?**
-The code is built around a `Region` enum and a `DepartureProvider` protocol. A fork can add another network by providing a stop list and a client for that city's live-data API.
+**Can it support another country?**
+The code is built around a `Region` enum and a `DepartureProvider` protocol. A fork can add another network by providing stops and a client for that network's live-data API. Any MOTIS instance would work with the existing `MotisClient`.
 
 ---
 
 ## Data sources and credits
 
 - **Live departures and notices:** [Golemio](https://api.golemio.cz), the City of Prague's data platform (operated by Operátor ICT, a.s.). Use of the API is subject to Golemio's terms.
-- **Stops, lines and colours:** [PID open data](https://data.pid.cz) (GTFS and stop list), published by ROPID. See [pid.cz/opendata](https://pid.cz/opendata/) for the data license and terms.
+- **Stops, lines and colours (Prague):** [PID open data](https://data.pid.cz) (GTFS and stop list), published by ROPID. See [pid.cz/opendata](https://pid.cz/opendata/) for the data license and terms.
+- **All of Czechia:** the community [MOTIS](https://github.com/motis-project/motis) instance at [motis.obehy.cz](https://motis.obehy.cz), generously offered for this project by its operator. Thank you!
+- **Border:** [Natural Earth](https://www.naturalearthdata.com) (public domain).
 - Icons: Apple SF Symbols.
 
-Odjezdy is an independent hobby project and is **not affiliated with PID, ROPID, DPP or the City of Prague.**
+Odjezdy is an independent hobby project and is **not affiliated with PID, ROPID, DPP, the City of Prague, or any transport operator.**
 
 ---
 
