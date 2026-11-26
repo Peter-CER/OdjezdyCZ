@@ -173,8 +173,8 @@ The key is stored only on your Mac (in the app's preferences) and is sent only t
 You need **Xcode 16 or newer** (free on the Mac App Store).
 
 ```bash
-git clone https://github.com/rp20048/odjezdy.git
-cd odjezdy
+git clone https://github.com/rp20048/OdjezdyPraha.git
+cd OdjezdyPraha
 open Odjezdy.xcodeproj
 ```
 
