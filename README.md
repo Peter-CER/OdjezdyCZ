@@ -108,6 +108,18 @@
 
 > Prefer to build it yourself? See [Build from source](#build-from-source).
 
+### Linux (Ubuntu)
+
+There's a Linux version with a GNOME top-bar drop-down. Build the package and install it:
+
+```bash
+linux/packaging/build-deb.sh
+sudo apt install ./linux/dist/odjezdy_1.0.0_all.deb
+```
+
+Then log out and back in and run `gnome-extensions enable odjezdy@rp20048.github.io`. Other
+ways to install, updating and troubleshooting: [linux/README.md](linux/README.md).
+
 ---
 
 ## First start: the Golemio API key

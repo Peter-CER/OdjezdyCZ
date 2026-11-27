@@ -1,37 +1,82 @@
 # Odjezdy for Linux
 
 A Linux port of [Odjezdy](../README.md): live departures for Prague (PID) and the rest of
-Czechia, from a tray icon. Python 3 + GTK 3. Tested on Ubuntu 24.04 (GNOME, Wayland).
+Czechia, from the top bar. Python 3 + GTK 3. Tested on Ubuntu 24.04 (GNOME, Wayland).
 
-## Install
+**Requirements:** Ubuntu 24.04 or a similar system with Python 3.11 or newer. The drop-down
+board needs GNOME Shell 46; elsewhere the app uses a tray icon and a window.
 
-Build the package and install it:
+- [Install the package](#install-the-package) (recommended)
+- [Run from a checkout](#run-from-a-checkout)
+- [Update and uninstall](#update-and-uninstall)
 
-    linux/packaging/build-deb.sh
-    sudo apt install ./linux/dist/odjezdy_1.0.0_all.deb
+## Install the package
 
-Or run it from a checkout:
+1. Get `odjezdy_1.0.0_all.deb`. If the [latest release](../../../releases/latest) has it,
+   download it. Otherwise build it (needs only `git` and `dpkg-deb`):
 
-    sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-ayatanaappindicator3-0.1 gir1.2-notify-0.7
-    python3 linux/run.py
+       git clone https://github.com/rp20048/OdjezdyCZ.git
+       cd OdjezdyCZ
+       linux/packaging/build-deb.sh        # → linux/dist/odjezdy_1.0.0_all.deb
 
-## Drop-down board (GNOME Shell extension)
+2. Install it, which also installs what it depends on (use the path to your file):
 
-On GNOME 46 (Ubuntu 24.04) the extension makes it behave like the Mac app: click the tram in
-the top bar and the board drops down under it. Right-click a departure for more actions.
+       sudo apt install ./linux/dist/odjezdy_1.0.0_all.deb
 
-After installing the `.deb`, log out and back in, then:
+3. **GNOME:** log out and back in, then turn on the drop-down:
 
-    gnome-extensions enable odjezdy@rp20048.github.io
+       gnome-extensions enable odjezdy@rp20048.github.io
 
-From a checkout, run `linux/install-extension.sh` first and follow what it prints. To remove
-that again, delete `~/.local/share/gnome-shell/extensions/odjezdy@rp20048.github.io` and
-`~/.local/share/dbus-1/services/io.github.rp20048.Odjezdy.service`.
+   A tram icon appears in the top bar. Click it for the board.
 
-## Without the extension
+4. **Other desktops, or without the extension:** start **Odjezdy** from your applications (or
+   run `odjezdy`), click its tray icon and choose **Show Departures** (or middle-click it).
+   To start it at login, use ⚙ → *Start at Login* in the window.
 
-The app shows its own tray icon: click it and choose **Show Departures** (or middle-click)
-to open the board in a window.
+There is no `apt install odjezdy` yet: the app is not in the Ubuntu archive or a PPA.
+
+If you used `install-extension.sh` before, remove what it created (see below), or it takes
+precedence over the installed package.
+
+## Run from a checkout
+
+    sudo apt install python3-gi gir1.2-gtk-3.0 gsettings-desktop-schemas gir1.2-ayatanaappindicator3-0.1 gir1.2-notify-0.7
+    python3 linux/run.py                 # tray icon and window
+
+For the drop-down, run `linux/install-extension.sh`, log out and back in, then
+`gnome-extensions enable odjezdy@rp20048.github.io`. It links to your checkout, so don't move
+or delete that folder.
+
+## Update and uninstall
+
+**Package:** to update, build or download the newer `.deb` and install it the same way, then
+log out and back in. To remove it: `sudo apt remove odjezdy`.
+
+**Checkout:** to update, `git pull`, then log out and back in. To remove the drop-down:
+
+    gnome-extensions disable odjezdy@rp20048.github.io
+    rm ~/.local/share/gnome-shell/extensions/odjezdy@rp20048.github.io
+    rm ~/.local/share/dbus-1/services/io.github.rp20048.Odjezdy.service
+
+Your settings stay in `~/.config/odjezdy/`; delete that folder to remove them too.
+
+## Using it
+
+- **Left-click** a departure for a leave-now alert; click it again to cancel.
+- **Right-click** a departure for the alert and to add its line to **Your Lines**.
+- **More ▾** shows later departures; **🔍** searches any stop.
+- **⚙** has the board settings, alert lead time, home location and the optional
+  [Golemio key](../README.md#first-start-the-golemio-api-key) for Prague.
+
+## Troubleshooting
+
+- **No tram icon after enabling:** log out and back in, then check
+  `gnome-extensions info odjezdy@rp20048.github.io`.
+- **"The Odjezdy app is not responding":** run `odjezdy` (or `python3 linux/run.py`) in a
+  terminal to see the error.
+- **Changes don't show after updating:** `pkill -f "odjezdy|linux/run.py|run.py --service"`,
+  then log out and back in.
+- **Wrong or no nearby stops:** see [Location](#location).
 
 ## Board colour and text size
 
@@ -62,7 +107,7 @@ Without a good fix you can search for any stop, or pick one and choose
 - With the extension, settings are in a panel under ⚙; there is no Start at Login (the app
   starts when you first open the board) and no Quit.
 - Home location setting; rough fixes are rejected.
-- Start at Login is off until you turn it on.
+- Start at Login (window version) is off until you turn it on.
 - The tray icon stays visible outside Czechia.
 - Emoji replace the SF Symbols.
 

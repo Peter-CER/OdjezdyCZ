@@ -35,7 +35,7 @@ Package: odjezdy
 Version: $version
 Architecture: all
 Maintainer: Odjezdy contributors <noreply@github.com>
-Depends: python3 (>= 3.11), python3-gi, gir1.2-gtk-3.0, gir1.2-ayatanaappindicator3-0.1, gir1.2-notify-0.7
+Depends: python3 (>= 3.11), python3-gi, gir1.2-gtk-3.0, gsettings-desktop-schemas, gir1.2-ayatanaappindicator3-0.1, gir1.2-notify-0.7
 Recommends: gir1.2-geoclue-2.0, geoclue-2.0, gnome-shell-extension-appindicator, fonts-noto-color-emoji
 Section: utils
 Priority: optional
