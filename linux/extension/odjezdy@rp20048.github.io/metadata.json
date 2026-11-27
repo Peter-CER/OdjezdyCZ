@@ -1,0 +1,7 @@
+{
+  "uuid": "odjezdy@rp20048.github.io",
+  "name": "Odjezdy",
+  "description": "Live public transport departures for Prague and Czechia in the top bar. Needs the Odjezdy app installed.",
+  "url": "https://github.com/rp20048/OdjezdyCZ",
+  "shell-version": ["46"]
+}

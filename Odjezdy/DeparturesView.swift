@@ -1,17 +1,51 @@
 import SwiftUI
 
-/// The dark "stop sign" panel with departure rows.
+/// Colours of the departure panel, following the system's Light / Dark appearance.
+/// Amber sign text always gets the dark panel: it's unreadable on a light one.
+struct BoardPalette {
+    let light: Bool
+    private let pureWhite: Bool
+
+    /// `choice`: the Board Colour setting ("auto", "white", "grey" = off-white, "dark").
+    init(_ scheme: ColorScheme, ledStyle: Bool, choice: String) {
+        light = !ledStyle && (choice == "white" || choice == "grey" || (choice == "auto" && scheme == .light))
+        pureWhite = choice == "white"
+    }
+
+    var background: Color {
+        guard light else { return Color(red: 0.07, green: 0.08, blue: 0.10) }
+        return pureWhite ? .white : Color(white: 0.95)
+    }
+    var text: Color { light ? Color(white: 0.11) : .white }
+    var border: Color { light ? .black.opacity(0.1) : .white.opacity(0.06) }
+    var divider: Color { text.opacity(light ? 0.09 : 0.07) }
+    var faded: Color { text.opacity(light ? 0.45 : 0.4) }
+    var heading: Color { text.opacity(light ? 0.55 : 0.45) }
+    var placeholder: Color { text.opacity(0.6) }
+    var live: Color { light ? Color(red: 0.09, green: 0.44, blue: 0.18) : .green }
+    var late: Color { light ? Color(red: 0.64, green: 0.29, blue: 0.0) : .orange }
+    var cancelled: Color { light ? Color(red: 0.75, green: 0.11, blue: 0.16) : .red }
+    var bell: Color { light ? Color(red: 0.70, green: 0.48, blue: 0.0) : Color(red: 1.0, green: 0.69, blue: 0.0) }
+}
+
+/// The "stop sign" panel with departure rows.
 struct DeparturesView: View {
     let group: StopGroup
     let sections: [ModeSection]
     let hasData: Bool
     let live: AppState.LiveState
     let ledStyle: Bool
+    var boardColor = "auto"
+    var textScale: CGFloat = 1
     var onToggle: (Int) -> Void = { _ in }
     var isAlertSet: (Departure) -> Bool = { _ in false }
     var onAlert: (Departure) -> Void = { _ in }
     var isFavourite: (String) -> Bool = { _ in false }
     var onFavourite: (String) -> Void = { _ in }
+    // Not private: that would make the memberwise initializer private too.
+    @Environment(\.colorScheme) var colorScheme
+
+    private var palette: BoardPalette { BoardPalette(colorScheme, ledStyle: ledStyle, choice: boardColor) }
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
@@ -24,11 +58,13 @@ struct DeparturesView: View {
                                       symbol: section.isFavourites ? "star.fill" : section.mode.symbol,
                                       ledStyle: ledStyle,
                                       expandable: section.hasMore || section.expanded,
-                                      expanded: section.expanded) { onToggle(section.id) }
+                                      expanded: section.expanded,
+                                      boardColor: boardColor, textScale: textScale) { onToggle(section.id) }
                             .padding(.top, si == 0 ? 2 : 8)
                         ForEach(Array(section.departures.enumerated()), id: \.element.id) { i, d in
                             DepartureRow(departure: d, colors: group.badgeColors(for: d),
-                                         now: ctx.date, ledStyle: ledStyle, alertSet: isAlertSet(d))
+                                         now: ctx.date, ledStyle: ledStyle, alertSet: isAlertSet(d),
+                                         boardColor: boardColor, textScale: textScale)
                                 // Leaves before you can walk there: dimmed.
                                 .opacity(group.isCatchable(d, now: ctx.date) || d.isCancelled ? 1 : 0.4)
                                 .contentShape(Rectangle())
@@ -42,7 +78,7 @@ struct DeparturesView: View {
                                     }
                                 }
                             if i < section.departures.count - 1 {
-                                Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 62)
+                                Rectangle().fill(palette.divider).frame(height: 1).padding(.leading, 22 + 40 * textScale)
                             }
                         }
                     }
@@ -51,11 +87,11 @@ struct DeparturesView: View {
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(red: 0.07, green: 0.08, blue: 0.10))
+                    .fill(palette.background)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(.white.opacity(0.06))
+                    .strokeBorder(palette.border)
             )
         }
     }
@@ -64,7 +100,7 @@ struct DeparturesView: View {
         HStack(spacing: 8) {
             switch hasData ? .ok : live {
             case .loading:
-                ProgressView().controlSize(.small).tint(.white)
+                ProgressView().controlSize(.small).tint(palette.text)
                 Text("Loading departures…")
             case .unavailable:
                 Image(systemName: "antenna.radiowaves.left.and.right.slash")
@@ -74,8 +110,8 @@ struct DeparturesView: View {
                 Text("No departures soon")
             }
         }
-        .font(.system(size: 12, weight: .medium))
-        .foregroundStyle(.white.opacity(0.6))
+        .font(.system(size: 12 * textScale, weight: .medium))
+        .foregroundStyle(palette.placeholder)
         .frame(maxWidth: .infinity, minHeight: 64)
     }
 }
@@ -87,26 +123,30 @@ struct SectionHeader: View {
     let ledStyle: Bool
     var expandable = false
     var expanded = false
+    var boardColor = "auto"
+    var textScale: CGFloat = 1
     var action: () -> Void = {}
+    @Environment(\.colorScheme) var colorScheme
 
     private var tint: Color {
-        ledStyle ? Color(red: 1.0, green: 0.69, blue: 0.0).opacity(0.6) : .white.opacity(0.45)
+        ledStyle ? Color(red: 1.0, green: 0.69, blue: 0.0).opacity(0.6)
+                 : BoardPalette(colorScheme, ledStyle: ledStyle, choice: boardColor).heading
     }
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
                 Image(systemName: symbol)
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 9 * textScale, weight: .semibold))
                 Text(title.uppercased())
-                    .font(.system(size: 9.5, weight: .semibold))
+                    .font(.system(size: 9.5 * textScale, weight: .semibold))
                     .tracking(0.8)
                 Spacer()
                 if expandable {
                     Text(expanded ? "Less" : "More")
-                        .font(.system(size: 9.5, weight: .medium))
+                        .font(.system(size: 9.5 * textScale, weight: .medium))
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(.system(size: 8 * textScale, weight: .bold))
                         .rotationEffect(.degrees(expanded ? 180 : 0))
                 }
             }
@@ -127,6 +167,9 @@ struct DepartureRow: View {
     let now: Date
     let ledStyle: Bool
     var alertSet = false
+    var boardColor = "auto"
+    var textScale: CGFloat = 1
+    @Environment(\.colorScheme) var colorScheme
 
     private static let hhmm: DateFormatter = {
         let f = DateFormatter()
@@ -136,25 +179,26 @@ struct DepartureRow: View {
     }()
 
     private var amber: Color { Color(red: 1.0, green: 0.69, blue: 0.0) }
-    private var mainText: Color { ledStyle ? amber : .white }
+    private var palette: BoardPalette { BoardPalette(colorScheme, ledStyle: ledStyle, choice: boardColor) }
+    private var mainText: Color { ledStyle ? amber : palette.text }
 
     var body: some View {
         HStack(spacing: 10) {
             Text(departure.line)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .font(.system(size: 12 * textScale, weight: .bold, design: .rounded))
                 .foregroundStyle(colors.fg)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .padding(.horizontal, 5)
-                .frame(minWidth: 34, minHeight: 22)
+                .frame(minWidth: 34 * textScale, minHeight: 22 * textScale)
                 .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(colors.bg))
-                .frame(width: 40, alignment: .leading)
+                .frame(width: 40 * textScale, alignment: .leading)
 
             Text(departure.destination)
-                .font(ledStyle ? .system(size: 13, weight: .medium, design: .monospaced)
-                               : .system(size: 13, weight: .medium))
-                .foregroundStyle(departure.isCancelled ? .white.opacity(0.4) : mainText)
-                .strikethrough(departure.isCancelled, color: .red.opacity(0.8))
+                .font(ledStyle ? .system(size: 13 * textScale, weight: .medium, design: .monospaced)
+                               : .system(size: 13 * textScale, weight: .medium))
+                .foregroundStyle(departure.isCancelled ? palette.faded : mainText)
+                .strikethrough(departure.isCancelled, color: palette.cancelled.opacity(0.8))
                 .lineLimit(1)
                 .truncationMode(.tail)
 
@@ -166,11 +210,11 @@ struct DepartureRow: View {
                     HStack(spacing: 3) {
                         Text(Self.hhmm.string(from: departure.planned))
                             .strikethrough()
-                            .foregroundStyle(.white.opacity(0.4))
+                            .foregroundStyle(palette.faded)
                         Text(Self.hhmm.string(from: departure.expected))
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(palette.late)
                     }
-                    .font(.system(size: 10, weight: .medium).monospacedDigit())
+                    .font(.system(size: 10 * textScale, weight: .medium).monospacedDigit())
                 }
             }
         }
@@ -183,8 +227,8 @@ struct DepartureRow: View {
     @ViewBuilder private var timeLabel: some View {
         if departure.isCancelled {
             Text("Cancelled")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.red)
+                .font(.system(size: 12 * textScale, weight: .semibold))
+                .foregroundStyle(palette.cancelled)
         } else {
             let secs = Int(departure.expected.timeIntervalSince(now).rounded(.down))
             let mins = secs / 60
@@ -195,11 +239,11 @@ struct DepartureRow: View {
             HStack(spacing: 5) {
                 if alertSet {
                     Image(systemName: "bell.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color(red: 1.0, green: 0.69, blue: 0.0))
+                        .font(.system(size: 10 * textScale))
+                        .foregroundStyle(palette.bell)
                 }
                 if departure.isLive {
-                    Circle().fill(Color.green).frame(width: 5, height: 5)
+                    Circle().fill(palette.live).frame(width: 5, height: 5)
                 }
                 Group {
                     if isNow {
@@ -212,9 +256,9 @@ struct DepartureRow: View {
                         Text(Self.hhmm.string(from: departure.expected))
                     }
                 }
-                .font(ledStyle ? .system(size: 14, weight: .semibold, design: .monospaced)
-                               : .system(size: 14, weight: .semibold).monospacedDigit())
-                .foregroundStyle(isNow ? (ledStyle ? amber : .green) : mainText)
+                .font(ledStyle ? .system(size: 14 * textScale, weight: .semibold, design: .monospaced)
+                               : .system(size: 14 * textScale, weight: .semibold).monospacedDigit())
+                .foregroundStyle(isNow ? (ledStyle ? amber : palette.live) : mainText)
             }
         }
     }

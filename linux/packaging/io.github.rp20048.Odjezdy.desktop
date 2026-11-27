@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Odjezdy
+Comment=Live public transport departures for Prague and Czechia
+Comment[cs]=Aktuální odjezdy veřejné dopravy v Praze a Česku
+Exec=odjezdy
+Icon=odjezdy
+Terminal=false
+Categories=Utility;
+Keywords=departures;transport;tram;metro;odjezdy;MHD;
+StartupWMClass=io.github.rp20048.Odjezdy

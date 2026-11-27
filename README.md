@@ -7,7 +7,8 @@
 <p align="center">
   <b>Live public transport departures in your Mac's menu bar, for Prague and all of Czechia.</b><br>
   Click the tram icon and see what leaves next from the stop you're standing at: metro, tram, bus, train and ferry,<br>
-  styled like the departure boards at the stops.
+  styled like the departure boards at the stops.<br>
+  On Ubuntu? See <a href="linux/README.md">Odjezdy for Linux</a>.
 </p>
 
 <p align="center">
@@ -50,7 +51,9 @@
 - **Second-accurate countdowns.** In the last 4 minutes, live departures count down as `3:25 … 0:40 … now` (with Golemio data, which predicts to the second; MOTIS data shows minutes). Further out they show `7 min`, and anything over an hour shows the clock time.
 - **Delays and cancellations.** A delayed departure shows the scheduled time crossed out next to the predicted one; cancelled trips are struck through in red.
 - **Disruption notices.** Service notices for the stop (closures, moved stops, diversions) appear as an orange banner above the board: official PID notices via Golemio (in English when translated), and MOTIS alerts elsewhere.
-- **Sign-style amber text** (optional): a nod to the LED boards at the stops (⚙︎ → *Sign-style Amber Text*).
+- **Board colour:** by default the departure board follows your appearance setting, off-white in Light and near-black in Dark. ⚙︎ → *Board Colour* picks White, Off-White or Dark instead.
+- **Text size:** ⚙︎ → *Text Size* makes the departure board smaller or larger.
+- **Sign-style amber text** (optional): a nod to the LED boards at the stops (⚙︎ → *Sign-style Amber Text*). The board stays dark while it is on.
 
 ### Smart stop picking
 - **The stop people actually use, not just the nearest pole.** Nearby stops are ranked by how busy they are (weekday departures), how far they are, and whether they have metro or tram, so a major stop 300 m away beats a little-used one 100 m away.
@@ -105,6 +108,18 @@
 
 > Prefer to build it yourself? See [Build from source](#build-from-source).
 
+### Linux (Ubuntu)
+
+There's a Linux version with a GNOME top-bar drop-down. Build the package and install it:
+
+```bash
+linux/packaging/build-deb.sh
+sudo apt install ./linux/dist/odjezdy_1.0.0_all.deb
+```
+
+Then log out and back in and run `gnome-extensions enable odjezdy@rp20048.github.io`. Other
+ways to install, updating and troubleshooting: [linux/README.md](linux/README.md).
+
 ---
 
 ## First start: the Golemio API key
@@ -130,7 +145,7 @@ The key is stored only on your Mac (in the app's preferences) and is sent only t
 | Pin a line to the top | Right-click a departure → **Add … to Your Lines** |
 | Look up another stop | Click 🔍 next to the stop name |
 | Refresh now | Click ↻ (it also refreshes every 15 s while open) |
-| Settings | Click ⚙︎: start at login, amber sign style, alert lead time, API key, quit |
+| Settings | Click ⚙︎: start at login, amber sign style, board colour, text size, alert lead time, API key, quit |
 
 ---
 

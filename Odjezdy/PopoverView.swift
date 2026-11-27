@@ -4,6 +4,8 @@ import AppKit
 struct PopoverView: View {
     @ObservedObject var state: AppState
     @AppStorage("ledStyle") private var ledStyle = false
+    @AppStorage("boardColor") private var boardColor = "auto"
+    @AppStorage("textSize") private var textSize = 1.0
     @AppStorage(LeaveAlert.bufferKey) private var alertBuffer = 5
     @FocusState private var searchFocused: Bool
 
@@ -24,6 +26,7 @@ struct PopoverView: View {
                     if let a = state.leaveAlert.pending { alertBanner(a) }
                     DeparturesView(group: g, sections: state.sections, hasData: state.hasDeparturesForSelected,
                                    live: state.live, ledStyle: ledStyle,
+                                   boardColor: boardColor, textScale: CGFloat(textSize),
                                    onToggle: { state.toggleExpanded($0) },
                                    isAlertSet: { state.leaveAlert.isSet($0) },
                                    onAlert: { state.toggleLeaveAlert($0) },
@@ -225,6 +228,18 @@ struct PopoverView: View {
             Menu {
                 Toggle("Start at Login", isOn: $state.startAtLogin)
                 Toggle("Sign-style Amber Text", isOn: $ledStyle)
+                Picker("Board Colour", selection: $boardColor) {
+                    Text("Automatic").tag("auto")
+                    Text("White").tag("white")
+                    Text("Off-White").tag("grey")
+                    Text("Dark").tag("dark")
+                }
+                Picker("Text Size", selection: $textSize) {
+                    Text("Small").tag(0.9)
+                    Text("Normal").tag(1.0)
+                    Text("Large").tag(1.15)
+                    Text("Extra Large").tag(1.3)
+                }
                 Picker("Leave-Now Alert", selection: $alertBuffer) {
                     ForEach(LeaveAlert.bufferChoices, id: \.self) { m in
                         Text("\(m) min before I must leave").tag(m)

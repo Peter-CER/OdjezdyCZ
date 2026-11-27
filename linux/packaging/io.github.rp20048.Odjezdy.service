@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=io.github.rp20048.Odjezdy
+Exec=/usr/bin/odjezdy --service
