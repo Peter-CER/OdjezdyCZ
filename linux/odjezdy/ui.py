@@ -7,23 +7,26 @@ search entry is the exception: it persists so typing isn't interrupted.
 
 from __future__ import annotations
 
+import re
 import time
 
 import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, GLib, Gtk, Pango  # noqa: E402
+from gi.repository import Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
 from . import autostart  # noqa: E402
 from .alerts import BUFFER_CHOICES  # noqa: E402
 from .models import REGION_NAMES, mode_symbol, mode_title, modes_list  # noqa: E402
 from .providers import SIGN_UP_URL  # noqa: E402
+from .view import (BOARD_COLORS, TEXT_SCALES, TEXT_SIZES, board_color, board_style,  # noqa: E402
+                   distance_text, hhmm, text_size, time_text)
 
 WIDTH = 380
 
-CSS = b"""
-.board { background: #12141A; border-radius: 12px; padding: 6px 0; }
+# The departure board; its pt sizes are scaled by the Text Size setting.
+BOARD_CSS = """.board { background: #12141A; border-radius: 12px; padding: 6px 0; font-size: 11pt; }
 .board label { color: #FFFFFF; }
 .board button { background: none; border: none; box-shadow: none; padding: 0; min-height: 0; }
 .board button:hover { background: rgba(255,255,255,0.06); }
@@ -38,7 +41,25 @@ CSS = b"""
 .board .bell { color: #FFB000; }
 .board.led .destination, .board.led .time, .board.led .now { color: #FFB000; font-family: monospace; }
 .board.led .section { color: rgba(255,176,0,0.6); }
-.badge { border-radius: 5px; padding: 2px 5px; font-weight: bold; font-size: 9pt; }
+.board.light { background: #F2F2F2; border: 1px solid rgba(0,0,0,0.1); }
+.board.light.white { background: #FFFFFF; }
+.board.light label { color: #1D1D1F; }
+.board.light button:hover { background: rgba(0,0,0,0.05); }
+.board.light .section { color: rgba(0,0,0,0.5); }
+.board.light .faded { color: rgba(0,0,0,0.4); }
+.board.light .late { color: #A34A00; }
+.board.light .now { color: #17702E; }
+.board.light .red { color: #C01C28; }
+.board.light .bell { color: #B27B00; }
+.board label.badge { border-radius: 5px; padding: 2px 5px; font-weight: bold; font-size: 9pt; }
+"""
+
+
+def board_css(scale: float) -> bytes:
+    return re.sub(r"(\d+)pt", lambda m: f"{int(m[1]) * scale:.1f}pt", BOARD_CSS).encode()
+
+
+CSS = b"""
 .dim { opacity: 0.4; }
 .title { font-weight: bold; font-size: 12pt; }
 .secondary { font-size: 9pt; opacity: 0.65; }
@@ -88,27 +109,6 @@ def button(content, on_click, tooltip=None, flat=True, classes=()):
     return b
 
 
-def distance_text(m: float) -> str:
-    return f"{round(m / 10) * 10:.0f} m" if m < 1000 else f"{m / 1000:.1f} km"
-
-
-def hhmm(t: float) -> str:
-    return time.strftime("%H:%M", time.localtime(t))
-
-
-def time_text(d, now: float) -> tuple[str, bool]:
-    """Countdown text and whether it's "now". Live second-precise predictions count down m:ss
-    in the last 4 minutes; planned times stay in whole minutes."""
-    secs = int((d.expected - now) // 1)
-    mins = int(secs / 60)
-    show_seconds = d.is_live and d.precise and secs < 240
-    if (secs <= 0) if show_seconds else mins < 1:
-        return "now", True
-    if show_seconds:
-        return f"{mins}:{secs % 60:02d}", False
-    return (f"{mins} min" if mins < 60 else hhmm(d.expected)), False
-
-
 class BoardWindow(Gtk.Window):
     def __init__(self, state, alert, config, quit_app):
         super().__init__(title="Odjezdy")
@@ -118,6 +118,10 @@ class BoardWindow(Gtk.Window):
         self._retry = None
         self._countdowns = None
         self._badge_css: dict[tuple[str, str], str] = {}
+        # The board follows the desktop's light / dark style.
+        self._interface = Gio.Settings.new("org.gnome.desktop.interface")
+        self._interface.connect("changed::color-scheme",
+                                lambda *_: self.get_visible() and self.render())
 
         self.set_default_size(WIDTH, -1)
         self.set_resizable(False)
@@ -127,7 +131,9 @@ class BoardWindow(Gtk.Window):
         self._provider = Gtk.CssProvider()
         self._provider.load_from_data(CSS)
         self._badges = Gtk.CssProvider()
-        for provider in (self._provider, self._badges):
+        self._board_provider = Gtk.CssProvider()
+        self._scale = None
+        for provider in (self._provider, self._board_provider, self._badges):
             Gtk.StyleContext.add_provider_for_screen(
                 Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
@@ -230,6 +236,10 @@ class BoardWindow(Gtk.Window):
                 self._retry = GLib.timeout_add(500, self._retry_render)
             return
         self._countdowns = self._countdown_state()
+        scale = TEXT_SCALES[text_size(self.config)]
+        if scale != self._scale:
+            self._scale = scale
+            self._board_provider.load_from_data(board_css(scale))
         for child in self.content.get_children():
             if not (self.editing_key and getattr(child, "is_key_entry", False)):
                 child.destroy()
@@ -346,8 +356,14 @@ class BoardWindow(Gtk.Window):
         s = self.state
         now = time.time()
         board = box(vertical=True, spacing=0, classes=("board",))
-        if self.config.get("ledStyle"):
-            board.get_style_context().add_class("led")
+        led = bool(self.config.get("ledStyle"))
+        style = board_style(board_color(self.config), led,
+                            self._interface.get_string("color-scheme") == "prefer-dark")
+        classes = ["led"] if led else [] if style == "dark" else ["light"]
+        if style == "white":
+            classes.append("white")
+        for c in classes:
+            board.get_style_context().add_class(c)
         sections = s.sections(now)
         if not sections:
             has_data = g.id in s.departures
@@ -359,6 +375,8 @@ class BoardWindow(Gtk.Window):
             placeholder.set_size_request(-1, 64)
             board.pack_start(placeholder, False, False, 0)
             return board
+        # One badge column for the whole board, as wide as its longest line name.
+        self._badge_column = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         for section in sections:
             board.pack_start(self._section_header(section), False, False, 0)
             for d in section.departures:
@@ -393,6 +411,7 @@ class BoardWindow(Gtk.Window):
         w.set_valign(Gtk.Align.CENTER)
         holder = box(w, spacing=0)
         holder.set_size_request(46, -1)
+        self._badge_column.add_widget(holder)
         return holder
 
     def _row(self, g, d, now):
@@ -557,6 +576,19 @@ class BoardWindow(Gtk.Window):
         led = Gtk.CheckMenuItem(label="Sign-style Amber Text")
         led.set_active(bool(config.get("ledStyle")))
         add(led, lambda i: (config.set("ledStyle", i.get_active()), self.render()), "toggled")
+
+        for title, key, choices, current in (
+                ("Board Colour", "boardColor", BOARD_COLORS, board_color(config)),
+                ("Text Size", "textSize", TEXT_SIZES, text_size(config))):
+            submenu, first = Gtk.Menu(), None
+            for value, text in choices:
+                item = Gtk.RadioMenuItem(label=text, group=first)
+                first = first or item
+                item.set_active(value == current)
+                item.connect("toggled", lambda i, k=key, v=value: i.get_active() and (
+                    config.set(k, v), GLib.idle_add(lambda: self.render() and False)))
+                submenu.append(item)
+            add(Gtk.MenuItem(label=title)).set_submenu(submenu)
 
         lead = Gtk.Menu()
         group = None

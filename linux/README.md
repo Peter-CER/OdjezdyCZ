@@ -15,7 +15,29 @@ Or run it from a checkout:
     sudo apt install python3-gi gir1.2-gtk-3.0 gir1.2-ayatanaappindicator3-0.1 gir1.2-notify-0.7
     python3 linux/run.py
 
-Click the tram icon in the top bar and choose **Show Departures** (or middle-click it).
+## Drop-down board (GNOME Shell extension)
+
+On GNOME 46 (Ubuntu 24.04) the extension makes it behave like the Mac app: click the tram in
+the top bar and the board drops down under it. Right-click a departure for more actions.
+
+After installing the `.deb`, log out and back in, then:
+
+    gnome-extensions enable odjezdy@rp20048.github.io
+
+From a checkout, run `linux/install-extension.sh` first and follow what it prints. To remove
+that again, delete `~/.local/share/gnome-shell/extensions/odjezdy@rp20048.github.io` and
+`~/.local/share/dbus-1/services/io.github.rp20048.Odjezdy.service`.
+
+## Without the extension
+
+The app shows its own tray icon: click it and choose **Show Departures** (or middle-click)
+to open the board in a window.
+
+## Board colour and text size
+
+Like the Mac app, the departure board follows the desktop's style by default: off-white in
+light, near-black in dark. Under ⚙ you can pick **Board colour** (Automatic, White, Off-White,
+Dark) and **Text size** (Small to Extra Large). Sign-style amber text always uses the dark panel.
 
 ## Location
 
@@ -36,7 +58,9 @@ Without a good fix you can search for any stop, or pick one and choose
 
 ## Differences from the Mac app
 
-- The board is a window opened from the tray menu, not a popover.
+- Without the GNOME extension the board is a window, not a drop-down.
+- With the extension, settings are in a panel under ⚙; there is no Start at Login (the app
+  starts when you first open the board) and no Quit.
 - Home location setting; rough fixes are rejected.
 - Start at Login is off until you turn it on.
 - The tray icon stays visible outside Czechia.

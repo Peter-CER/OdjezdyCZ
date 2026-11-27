@@ -1,4 +1,8 @@
-"""Tray icon, single instance and notifications. Mirrors OdjezdyApp.swift."""
+"""Tray icon, single instance, D-Bus service and notifications. Mirrors OdjezdyApp.swift.
+
+Two front ends share one process: the GNOME Shell extension (a drop-down under the top bar,
+talking D-Bus) and, where it isn't running, a tray icon with a window.
+"""
 
 from __future__ import annotations
 
@@ -20,6 +24,7 @@ from . import APP_ID  # noqa: E402
 from .alerts import LeaveAlert  # noqa: E402
 from .config import Config  # noqa: E402
 from .location import LocationService  # noqa: E402
+from .service import BoardService  # noqa: E402
 from .state import AppState  # noqa: E402
 from .ui import BoardWindow  # noqa: E402
 
@@ -40,6 +45,18 @@ class Application(Gtk.Application):
         super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self.window = None
         self.indicator = None
+        self.state = self.alert = self.config = None
+        self.service = BoardService(self)
+        self.attached = False             # the shell extension is the front end
+
+    def do_dbus_register(self, connection, object_path):
+        Gtk.Application.do_dbus_register(self, connection, object_path)
+        self.service.export(connection)
+        return True
+
+    def do_dbus_unregister(self, connection, object_path):
+        self.service.unexport()
+        Gtk.Application.do_dbus_unregister(self, connection, object_path)
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
@@ -48,15 +65,34 @@ class Application(Gtk.Application):
         location = LocationService(config, log)
         state = AppState(config, location, log)
         alert = LeaveAlert(self.notify, self._changed, log)
+        self.state, self.alert, self.config = state, alert, config
         self.window = BoardWindow(state, alert, config, self.quit)
         state.on_change = self._changed
         self.add_window(self.window)
-        self.hold()                       # stay running in the tray with the window hidden
-        self._make_indicator()
+        self.hold()                       # stay running with the window hidden
 
     def _changed(self):
         if self.window and self.window.get_visible():
             self.window.render()
+        self.service.changed()
+
+    def set_attached(self, attached: bool):
+        """The extension took over (hide our own icon and window) or went away."""
+        self.attached = attached
+        if attached:
+            self.window.hide()
+        elif self.state.is_open and not self.window.get_visible():
+            self.state.closed()
+        if self.indicator:
+            status = AppIndicator.IndicatorStatus
+            self.indicator.set_status(status.PASSIVE if attached else status.ACTIVE)
+
+    def set_board_open(self, is_open: bool):
+        if is_open:
+            self.state.opened()
+        else:
+            self.state.search_open = False
+            self.state.closed()
 
     def _make_indicator(self):
         if AppIndicator is None:
@@ -109,8 +145,13 @@ class Application(Gtk.Application):
 
     def do_command_line(self, command_line):
         args = command_line.get_arguments()[1:]
+        if "--service" in args:           # started over D-Bus for the extension
+            return 0
+        if self.indicator is None and not self.attached:
+            self._make_indicator()
         # A second launch reaches the running instance: show the board.
-        if command_line.get_is_remote() or "--hidden" not in args or self.indicator is None:
+        if command_line.get_is_remote() or "--hidden" not in args or (
+                self.indicator is None and not self.attached):
             self.show_board()
         return 0
 

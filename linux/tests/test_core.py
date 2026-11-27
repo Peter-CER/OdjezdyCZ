@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from odjezdy import models, providers, stops  # noqa: E402
+from odjezdy import models, providers, stops, view  # noqa: E402
 from odjezdy.alerts import Pending, message  # noqa: E402
 from odjezdy.config import Config  # noqa: E402
 from odjezdy.state import build_sections  # noqa: E402
@@ -100,6 +100,39 @@ class Logic(unittest.TestCase):
             Config(path).set("golemioKey", "secret")
             self.assertEqual(Config(path).golemio_key, "secret")
             self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+
+
+class View(unittest.TestCase):
+    def test_row_and_time_texts(self):
+        d = departure("22", 3, precise=True)
+        d.is_live = True
+        self.assertEqual(view.time_text(d, NOW), ("3:00", False))
+        self.assertEqual(view.time_text(d, NOW + 180), ("now", True))
+        d.precise = False
+        self.assertEqual(view.time_text(d, NOW), ("3 min", False))
+
+    def test_board_style(self):
+        self.assertEqual(view.board_style("auto", False, False), "grey")
+        self.assertEqual(view.board_style("auto", False, True), "dark")
+        self.assertEqual(view.board_style("white", False, True), "white")
+        self.assertEqual(view.board_style("white", True, False), "dark")
+
+    def test_style_settings_are_validated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Config(os.path.join(tmp, "c.json"))
+            class State:
+                selected = None
+            view.perform(State(), None, config, "textSize", "large")
+            view.perform(State(), None, config, "textSize", "huge")
+            view.perform(State(), None, config, "boardColor", "blue")
+            self.assertEqual((view.text_size(config), view.board_color(config)), ("large", "auto"))
+
+    def test_unknown_actions_are_ignored(self):
+        class State:
+            selected = None
+            search_results = []
+        view.perform(State(), None, None, "choose", 5)
+        view.perform(State(), None, None, "nonsense", None)
 
 
 if __name__ == "__main__":

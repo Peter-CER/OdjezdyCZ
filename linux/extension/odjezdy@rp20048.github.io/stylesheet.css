@@ -1,0 +1,57 @@
+.odjezdy-root { width: 28em; padding: 4px 12px; spacing: 8px; }
+.odjezdy-scroll { max-height: 560px; }
+.odjezdy-body { spacing: 10px; }
+.odjezdy-title { font-weight: bold; font-size: 1.15em; }
+.odjezdy-secondary { font-size: 0.85em; color: rgba(150,150,150,1); }
+.odjezdy-center { text-align: center; }
+.odjezdy-row-spaced { spacing: 8px; }
+.odjezdy-button { padding: 4px 12px; border-radius: 8px; background-color: rgba(128,128,128,0.2); }
+.odjezdy-flat { padding: 2px 6px; border-radius: 6px; }
+.odjezdy-button:hover, .odjezdy-flat:hover, .odjezdy-result:hover { background-color: rgba(128,128,128,0.35); }
+.odjezdy-tabs { spacing: 4px; }
+.odjezdy-tab { padding: 3px 8px; border-radius: 14px; font-size: 0.85em; background-color: rgba(128,128,128,0.15); }
+.odjezdy-tab-active { background-color: rgba(53,132,228,0.45); font-weight: bold; }
+.odjezdy-banner { padding: 4px 8px; border-radius: 8px; font-size: 0.9em; background-color: rgba(128,128,128,0.15); spacing: 6px; }
+.odjezdy-notice { padding: 8px; border-radius: 8px; font-size: 0.9em; background-color: rgba(255,149,0,0.18); spacing: 4px; }
+.odjezdy-result { padding: 4px 8px; border-radius: 8px; }
+.odjezdy-settings { spacing: 4px; padding-top: 6px; }
+.odjezdy-entry { min-width: 10em; }
+
+.odjezdy-board { background-color: #12141a; border-radius: 12px; padding: 6px 0; color: #ffffff; }
+.odjezdy-line { padding: 4px 12px; }
+.odjezdy-line:hover { background-color: rgba(255,255,255,0.08); }
+.odjezdy-section { font-size: 0.75em; font-weight: bold; color: rgba(255,255,255,0.45); }
+.odjezdy-badge { min-width: 2.2em; padding: 3px 5px; border-radius: 5px; font-weight: bold; font-size: 0.85em; text-align: center; }
+.odjezdy-destination { font-weight: 500; }
+.odjezdy-time { font-weight: bold; font-size: 1.05em; }
+.odjezdy-times { spacing: 4px; }
+.odjezdy-small { font-size: 0.75em; }
+.odjezdy-faded { color: rgba(255,255,255,0.4); }
+.odjezdy-late { color: #ff9f0a; }
+.odjezdy-now { color: #30d158; }
+.odjezdy-dot { color: #30d158; font-size: 0.6em; }
+.odjezdy-red { color: #ff453a; }
+.odjezdy-placeholder { padding: 20px; text-align: center; color: rgba(255,255,255,0.6); }
+.odjezdy-actions { padding: 2px 12px 6px 12px; spacing: 6px; }
+.odjezdy-board-button { padding: 3px 10px; border-radius: 8px; font-size: 0.85em; background-color: rgba(255,255,255,0.12); }
+.odjezdy-board-button:hover { background-color: rgba(255,255,255,0.22); }
+.odjezdy-led .odjezdy-destination, .odjezdy-led .odjezdy-time, .odjezdy-led .odjezdy-now { color: #ffb000; font-family: monospace; }
+.odjezdy-led .odjezdy-section { color: rgba(255,176,0,0.6); }
+
+.odjezdy-size-small { font-size: 0.9em; }
+.odjezdy-size-large { font-size: 1.15em; }
+.odjezdy-size-xlarge { font-size: 1.3em; }
+
+/* Light style; after the dark rules so these win. */
+.odjezdy-board.odjezdy-light { background-color: #f2f2f2; color: #1d1d1f; border: 1px solid rgba(0,0,0,0.1); }
+.odjezdy-light .odjezdy-line:hover { background-color: rgba(0,0,0,0.05); }
+.odjezdy-light .odjezdy-section { color: rgba(0,0,0,0.5); }
+.odjezdy-light .odjezdy-faded { color: rgba(0,0,0,0.4); }
+.odjezdy-light .odjezdy-late { color: #a34a00; }
+.odjezdy-light .odjezdy-now, .odjezdy-light .odjezdy-dot { color: #17702e; }
+.odjezdy-light .odjezdy-red { color: #c01c28; }
+.odjezdy-light .odjezdy-placeholder { color: rgba(0,0,0,0.55); }
+.odjezdy-light .odjezdy-board-button { background-color: rgba(0,0,0,0.08); }
+.odjezdy-light .odjezdy-board-button:hover { background-color: rgba(0,0,0,0.15); }
+.odjezdy-board.odjezdy-light.odjezdy-white { background-color: #ffffff; }
+.odjezdy-badge StLabel { font-weight: bold; }

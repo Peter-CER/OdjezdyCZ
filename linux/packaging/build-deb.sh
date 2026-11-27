@@ -17,6 +17,11 @@ install -m644 "$linux/data/odjezdy-symbolic.svg" "$root/usr/share/icons/hicolor/
 install -m644 "$linux/data/odjezdy.png" "$root/usr/share/icons/hicolor/256x256/apps/"
 install -m644 "$linux/../LICENSE" "$root/usr/share/doc/odjezdy/copyright"
 
+uuid=odjezdy@rp20048.github.io
+install -d "$root/usr/share/gnome-shell/extensions/$uuid" "$root/usr/share/dbus-1/services"
+install -m644 "$linux/extension/$uuid"/* "$root/usr/share/gnome-shell/extensions/$uuid/"
+install -m644 "$linux/packaging/io.github.rp20048.Odjezdy.service" "$root/usr/share/dbus-1/services/"
+
 cat > "$root/usr/bin/odjezdy" <<'LAUNCHER'
 #!/usr/bin/python3
 from odjezdy.app import main
